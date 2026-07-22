@@ -6,19 +6,19 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
 const PALETTES = [
-  { c1: new THREE.Color('#818cf8'), c2: new THREE.Color('#2dd4bf') }, // Indigo / Teal
-  { c1: new THREE.Color('#f472b6'), c2: new THREE.Color('#60a5fa') }, // Pink / Blue
+  { c1: new THREE.Color('#a855f7'), c2: new THREE.Color('#6366f1') }, // Purple / Indigo
+  { c1: new THREE.Color('#34d399'), c2: new THREE.Color('#06b6d4') }, // Emerald / Cyan
   { c1: new THREE.Color('#fb923c'), c2: new THREE.Color('#e11d48') }, // Orange / Rose
 ];
 
-export function CanvasContainer({
-  simMode,
-  colorPalette,
-  getAudioLevel,
-  handsDataRef,
-  onCanvasReady
-}) {
+export function CanvasContainer({ colorPalette, onCanvasReady }) {
   const containerRef = useRef(null);
+  const colorPaletteRef = useRef(colorPalette);
+
+  // Keep ref up to date when prop changes without re-mounting Three.js canvas
+  useEffect(() => {
+    colorPaletteRef.current = colorPalette;
+  }, [colorPalette]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -36,7 +36,7 @@ export function CanvasContainer({
       alpha: false,
       stencil: false,
       depth: true,
-      preserveDrawingBuffer: true, // For PNG capture
+      preserveDrawingBuffer: true,
     });
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -122,22 +122,17 @@ export function CanvasContainer({
     composer.addPass(bloomPass);
     composer.addPass(finalPass);
 
-    // Particle Shaders
+    // Particle Shader with 1-Second Intro Circle Blast (Runs ONLY ONCE on page load)
     const particleVertexShader = `
       uniform float uTime;
-      uniform float uMode;
-      uniform vec3 uHandLeft;
-      uniform vec3 uHandRight;
-      uniform float uHandLeftState;
-      uniform float uHandRightState;
-      uniform float uAudio;
+      uniform float uIntro;
+      uniform vec3 uMouse;
       
       attribute vec3 aRandom;
       attribute float aIndex;
 
       varying vec3 vColor;
       varying float vAlpha;
-      varying float vDist;
 
       vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
       vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -187,34 +182,6 @@ export function CanvasContainer({
         return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3) ) );
       }
 
-      vec3 getPosSphere(float idx) {
-        float phi = acos( -1.0 + ( 2.0 * idx ) / ${particleCount}.0 );
-        float theta = sqrt( ${particleCount}.0 * 3.1415926 ) * phi;
-        float r = 12.0 + aRandom.x * 2.0;
-        return vec3(r * sin(phi) * cos(theta), r * sin(phi) * sin(theta), r * cos(phi));
-      }
-
-      vec3 getPosTorus(float idx) {
-        float t = idx * 0.1;
-        float r = 10.0 + aRandom.y * 3.0;
-        float tube = 3.0 + aRandom.x * 2.0;
-        float angle = (idx / ${particleCount}.0) * 6.28 * 15.0;
-        return vec3(
-          (r + tube * cos(angle)) * cos(t),
-          (r + tube * cos(angle)) * sin(t),
-          tube * sin(angle)
-        );
-      }
-
-      vec3 getPosLattice(float idx) {
-        float size = 25.0;
-        float step = pow(${particleCount}.0, 1.0/3.0);
-        float x = mod(idx, step);
-        float y = mod(floor(idx/step), step);
-        float z = floor(idx/(step*step));
-        return (vec3(x, y, z) / step - 0.5) * size;
-      }
-
       vec3 getPosVortex(float idx) {
         float r = (idx / ${particleCount}.0) * 18.0;
         float ang = r * 3.0;
@@ -224,12 +191,6 @@ export function CanvasContainer({
 
       void main() {
         float t = uTime * 0.15;
-        vec3 pos = vec3(0.0);
-        float m = uMode;
-
-        vec3 pSphere = getPosSphere(aIndex);
-        vec3 pTorus = getPosTorus(aIndex);
-        vec3 pLattice = getPosLattice(aIndex);
         vec3 pVortex = getPosVortex(aIndex);
 
         vec3 noiseBase = vec3(
@@ -238,52 +199,41 @@ export function CanvasContainer({
           snoise(vec3(0.0, aIndex*0.01, t*0.2))
         );
 
-        pSphere += noiseBase * 4.0;
-        pTorus += noiseBase * 2.0;
-        pLattice += noiseBase * 1.5;
         pVortex += noiseBase * 2.0;
-
-        float c = cos(t*0.3); float s = sin(t*0.3);
-        pTorus.xy = mat2(c, -s, s, c) * pTorus.xy;
-        pTorus.xz = mat2(c, -s, s, c) * pTorus.xz;
 
         float va = t * 1.0 - length(pVortex.xy)*0.2;
         float vc = cos(va); float vs = sin(va);
         pVortex.xy = mat2(vc, -vs, vs, vc) * pVortex.xy;
 
-        if(m <= 0.0) pos = pSphere;
-        else if(m <= 1.0) pos = mix(pSphere, pTorus, m);
-        else if(m <= 2.0) pos = mix(pTorus, pLattice, m - 1.0);
-        else if(m <= 3.0) pos = mix(pLattice, pVortex, m - 2.0);
-        else pos = pVortex;
+        float d = distance(pVortex, uMouse);
+        float influence = smoothstep(12.0, 0.0, d);
+        pVortex += normalize(pVortex - uMouse) * influence * 6.0;
 
-        pos *= (1.0 + uAudio * 0.4);
+        // Intro circle blast
+        float circleAngle = aIndex * 0.1;
+        float circleRadius = 1.5 + aRandom.x * 2.5;
+        vec3 pCircle = vec3(
+          circleRadius * cos(circleAngle),
+          circleRadius * sin(circleAngle),
+          (aRandom.z - 0.5) * 1.5
+        );
 
-        if (uHandLeft.x > -90.0) {
-          float d = distance(pos, uHandLeft);
-          float influence = smoothstep(12.0, 0.0, d);
-          if (uHandLeftState < 0.0) {
-            pos = mix(pos, uHandLeft, influence * 0.3);
-          } else {
-            pos += normalize(pos - uHandLeft) * influence * 8.0;
-          }
-        }
-        
-        if (uHandRight.x < 90.0) {
-          float d = distance(pos, uHandRight);
-          float influence = smoothstep(12.0, 0.0, d);
-          if (uHandRightState < 0.0) {
-            pos = mix(pos, uHandRight, influence * 0.3);
-          } else {
-            pos += normalize(pos - uHandRight) * influence * 8.0;
-          }
-        }
+        vec3 blastDir = normalize(pCircle + vec3((aRandom.xy - 0.5) * 2.0, (aRandom.z - 0.5)));
+        float blastDist = pow(uIntro, 1.8) * (50.0 + aRandom.y * 70.0);
+        vec3 pExploded = pCircle + blastDir * blastDist;
+
+        float blastProgress = smoothstep(0.1, 0.7, uIntro);
+        float vortexMix = smoothstep(0.5, 1.0, uIntro);
+
+        vec3 currentPos = mix(pCircle, pExploded, blastProgress);
+        vec3 pos = mix(currentPos, pVortex, vortexMix);
 
         vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-        gl_PointSize = (1.5 + aRandom.y * 2.0 + uAudio * 5.0) * (30.0 / -mvPosition.z);
+        
+        float blastSizeBoost = sin(uIntro * 3.14159) * 4.0 * (1.0 - vortexMix);
+        gl_PointSize = (1.5 + aRandom.y * 2.0 + blastSizeBoost) * (30.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
         
-        vDist = length(pos);
         float depthFade = smoothstep(60.0, 10.0, -mvPosition.z);
         vAlpha = depthFade * (0.2 + aRandom.z * 0.6);
         vColor = pos;
@@ -295,7 +245,6 @@ export function CanvasContainer({
       uniform vec3 uColor2;
       varying vec3 vColor;
       varying float vAlpha;
-      varying float vDist;
 
       void main() {
         vec2 center = gl_PointCoord - 0.5;
@@ -329,17 +278,14 @@ export function CanvasContainer({
     geometry.setAttribute('aIndex', new THREE.BufferAttribute(indices, 1));
     geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 3));
 
+    const initialIdx = colorPaletteRef.current || 0;
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
-        uMode: { value: 0 },
-        uHandLeft: { value: new THREE.Vector3(-100, 0, 0) },
-        uHandRight: { value: new THREE.Vector3(100, 0, 0) },
-        uHandLeftState: { value: 0 },
-        uHandRightState: { value: 0 },
-        uAudio: { value: 0 },
-        uColor1: { value: PALETTES[0].c1.clone() },
-        uColor2: { value: PALETTES[0].c2.clone() },
+        uIntro: { value: 0 },
+        uMouse: { value: new THREE.Vector3(0, 0, 0) },
+        uColor1: { value: PALETTES[initialIdx].c1.clone() },
+        uColor2: { value: PALETTES[initialIdx].c2.clone() },
       },
       vertexShader: particleVertexShader,
       fragmentShader: particleFragmentShader,
@@ -351,16 +297,14 @@ export function CanvasContainer({
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // Mouse fallback tracking
-    const handLeftPos = new THREE.Vector3(-100, 0, 0);
-    const handRightPos = new THREE.Vector3(100, 0, 0);
-    const mouseTargetRight = new THREE.Vector3(100, 0, 0);
+    // Mouse Tracking
+    const mousePos = new THREE.Vector3(0, 0, 0);
+    const mouseTarget = new THREE.Vector3(0, 0, 0);
 
     const handleMouseMove = (e) => {
-      if (handsDataRef?.current?.active) return;
       const x = (e.clientX / window.innerWidth) * 2 - 1;
       const y = -(e.clientY / window.innerHeight) * 2 + 1;
-      mouseTargetRight.set(x * 30, y * 20, 0);
+      mouseTarget.set(x * 25, y * 18, 0);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -378,70 +322,39 @@ export function CanvasContainer({
     // Animation Loop
     let animationFrameId;
     let time = 0;
-    let currentMode = simMode;
-
+    let introTimer = 0;
     const clock = new THREE.Clock();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
       time += delta;
+      introTimer += delta;
 
-      // Audio update
-      if (getAudioLevel) {
-        material.uniforms.uAudio.value = getAudioLevel();
-      }
-
-      // Smooth Mode Transition
-      if (Math.abs(currentMode - simMode) > 0.001) {
-        currentMode += (simMode - currentMode) * 0.05;
-      } else {
-        currentMode = simMode;
-      }
-      material.uniforms.uMode.value = currentMode;
+      // 1-second intro progress (runs ONLY ONCE on page load, capping at 1.0)
+      const uIntroVal = Math.min(introTimer / 1.0, 1.0);
+      material.uniforms.uIntro.value = uIntroVal;
 
       material.uniforms.uTime.value = time;
       finalPass.uniforms.uTime.value = time;
 
-      // Hand Data / Mouse Lerping
-      const lerpFactor = 0.1;
-      const hands = handsDataRef?.current;
+      // Mouse Lerping
+      mousePos.lerp(mouseTarget, 0.08);
+      material.uniforms.uMouse.value.copy(mousePos);
 
-      if (hands && hands.active) {
-        handLeftPos.lerp(
-          new THREE.Vector3(hands.left.x, hands.left.y, hands.left.z),
-          lerpFactor
-        );
-        handRightPos.lerp(
-          new THREE.Vector3(hands.right.x, hands.right.y, hands.right.z),
-          lerpFactor
-        );
-        material.uniforms.uHandLeftState.value = hands.left.state;
-        material.uniforms.uHandRightState.value = hands.right.state;
-      } else {
-        handRightPos.lerp(mouseTargetRight, lerpFactor);
-        handLeftPos.set(-100, 0, 0);
-        material.uniforms.uHandLeftState.value = 0;
-        material.uniforms.uHandRightState.value = 0;
-      }
-
-      material.uniforms.uHandLeft.value.copy(handLeftPos);
-      material.uniforms.uHandRight.value.copy(handRightPos);
-
-      // Color Palette Lerping
-      const targetC1 = PALETTES[colorPalette]?.c1 || PALETTES[0].c1;
-      const targetC2 = PALETTES[colorPalette]?.c2 || PALETTES[0].c2;
+      // Color Palette Lerping (reads ref dynamically without re-mounting!)
+      const activeIdx = colorPaletteRef.current || 0;
+      const targetC1 = PALETTES[activeIdx]?.c1 || PALETTES[0].c1;
+      const targetC2 = PALETTES[activeIdx]?.c2 || PALETTES[0].c2;
       material.uniforms.uColor1.value.lerp(targetC1, 0.05);
       material.uniforms.uColor2.value.lerp(targetC2, 0.05);
 
-      // Subtle Camera Sway if no hand tracking
-      if (!hands || !hands.active) {
-        const zTarget = cameraZ + Math.sin(time * 0.5) * 2;
-        camera.position.z += (zTarget - camera.position.z) * 0.02;
-        camera.position.x = Math.sin(time * 0.2) * 2;
-        camera.position.y = Math.cos(time * 0.15) * 2;
-        camera.lookAt(0, 0, 0);
-      }
+      // Subtle Camera Sway
+      const zTarget = cameraZ + Math.sin(time * 0.5) * 2;
+      camera.position.z += (zTarget - camera.position.z) * 0.02;
+      camera.position.x = Math.sin(time * 0.2) * 2;
+      camera.position.y = Math.cos(time * 0.15) * 2;
+      camera.lookAt(0, 0, 0);
 
       composer.render();
     };
@@ -459,7 +372,7 @@ export function CanvasContainer({
       material.dispose();
       renderer.dispose();
     };
-  }, [simMode, colorPalette, getAudioLevel, handsDataRef, onCanvasReady]);
+  }, []); // Mount ONCE!
 
   return <div ref={containerRef} className="absolute inset-0 z-0" />;
 }
