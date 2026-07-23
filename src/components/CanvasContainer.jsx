@@ -5,9 +5,10 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
+// Exact vibrant palettes from original index.html
 const PALETTES = [
-  { c1: new THREE.Color('#a855f7'), c2: new THREE.Color('#6366f1') }, // Purple / Indigo
-  { c1: new THREE.Color('#34d399'), c2: new THREE.Color('#06b6d4') }, // Emerald / Cyan
+  { c1: new THREE.Color('#818cf8'), c2: new THREE.Color('#2dd4bf') }, // Indigo / Teal
+  { c1: new THREE.Color('#f472b6'), c2: new THREE.Color('#60a5fa') }, // Pink / Blue
   { c1: new THREE.Color('#fb923c'), c2: new THREE.Color('#e11d48') }, // Orange / Rose
 ];
 
@@ -15,7 +16,6 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
   const containerRef = useRef(null);
   const colorPaletteRef = useRef(colorPalette);
 
-  // Keep ref up to date when prop changes without re-mounting Three.js canvas
   useEffect(() => {
     colorPaletteRef.current = colorPalette;
   }, [colorPalette]);
@@ -122,14 +122,18 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
     composer.addPass(bloomPass);
     composer.addPass(finalPass);
 
-    // Particle Shader with 1-Second Intro Circle Blast (Runs ONLY ONCE on page load)
+    // Particle Shader with Section-Locked Plateaus & Smooth Transitions
     const particleVertexShader = `
       uniform float uTime;
       uniform float uIntro;
+      uniform float uScrollProgress;
+      uniform float uIsDesktop;
       uniform vec3 uMouse;
       
       attribute vec3 aRandom;
       attribute float aIndex;
+      attribute vec3 aInfoPos;
+      attribute vec3 aCodePos;
 
       varying vec3 vColor;
       varying float vAlpha;
@@ -192,24 +196,42 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
       void main() {
         float t = uTime * 0.15;
         vec3 pVortex = getPosVortex(aIndex);
+        vec3 pInfo = aInfoPos;
+        vec3 pCode = aCodePos;
 
+        // Animate Vortex Rotation
+        float va = t * 1.0 - length(pVortex.xy)*0.2;
+        float vc = cos(va); float vs = sin(va);
+        pVortex.xy = mat2(vc, -vs, vs, vc) * pVortex.xy;
+
+        // Section-Locked Shape Morphing:
+        // uScrollProgress:
+        // 0.0 (Hero): Vortex
+        // 1.0 (About): Info-Icon
+        // 2.0 (Skills): Code Brackets </>
+        // 3.0 (Projects & Contact): Vortex
+        vec3 targetShape;
+        if (uScrollProgress <= 1.0) {
+          float p = clamp(uScrollProgress, 0.0, 1.0);
+          targetShape = mix(pVortex, pInfo, p);
+        } else if (uScrollProgress <= 2.0) {
+          float p = clamp(uScrollProgress - 1.0, 0.0, 1.0);
+          targetShape = mix(pInfo, pCode, p);
+        } else {
+          float p = clamp(uScrollProgress - 2.0, 0.0, 1.0);
+          targetShape = mix(pCode, pVortex, p);
+        }
+
+        // Fluid Simplex Noise
         vec3 noiseBase = vec3(
           snoise(vec3(aIndex*0.01, t*0.2, 0.0)),
           snoise(vec3(aIndex*0.01, 0.0, t*0.2)),
           snoise(vec3(0.0, aIndex*0.01, t*0.2))
         );
 
-        pVortex += noiseBase * 2.0;
+        targetShape += noiseBase * 1.8;
 
-        float va = t * 1.0 - length(pVortex.xy)*0.2;
-        float vc = cos(va); float vs = sin(va);
-        pVortex.xy = mat2(vc, -vs, vs, vc) * pVortex.xy;
-
-        float d = distance(pVortex, uMouse);
-        float influence = smoothstep(12.0, 0.0, d);
-        pVortex += normalize(pVortex - uMouse) * influence * 6.0;
-
-        // Intro circle blast
+        // Intro Circle Blast (On initial page load)
         float circleAngle = aIndex * 0.1;
         float circleRadius = 1.5 + aRandom.x * 2.5;
         vec3 pCircle = vec3(
@@ -223,19 +245,47 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
         vec3 pExploded = pCircle + blastDir * blastDist;
 
         float blastProgress = smoothstep(0.1, 0.7, uIntro);
-        float vortexMix = smoothstep(0.5, 1.0, uIntro);
+        float mainMix = smoothstep(0.5, 1.0, uIntro);
 
         vec3 currentPos = mix(pCircle, pExploded, blastProgress);
-        vec3 pos = mix(currentPos, pVortex, vortexMix);
+        vec3 pos = mix(currentPos, targetShape, mainMix);
+
+        // DYNAMIC X-SHIFT: Shift left for About (1.0) and Skills (2.0), return to CENTER for Projects (3.0) & Contact
+        float xShiftProgress = 0.0;
+        if (uScrollProgress <= 1.0) {
+          xShiftProgress = clamp(uScrollProgress, 0.0, 1.0);
+        } else if (uScrollProgress <= 2.0) {
+          xShiftProgress = 1.0;
+        } else if (uScrollProgress <= 3.0) {
+          xShiftProgress = 1.0 - clamp(uScrollProgress - 2.0, 0.0, 1.0);
+        } else {
+          xShiftProgress = 0.0;
+        }
+
+        float desktopShift = -12.5 * xShiftProgress * uIsDesktop;
+        float mobileShift = -4.0 * xShiftProgress * (1.0 - uIsDesktop);
+        pos.x += desktopShift + mobileShift;
+
+        // Dynamic Proximity Mouse Interaction (Computed AFTER position shift, 5.0 unit threshold)
+        float d = distance(pos.xy, uMouse.xy);
+        float influence = smoothstep(5.0, 0.0, d);
+        vec3 dir = pos - uMouse;
+        if (length(dir) > 0.001) {
+          pos += normalize(dir) * influence * 3.5;
+        }
 
         vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
         
-        float blastSizeBoost = sin(uIntro * 3.14159) * 4.0 * (1.0 - vortexMix);
+        float blastSizeBoost = sin(uIntro * 3.14159) * 4.0 * (1.0 - mainMix);
         gl_PointSize = (1.5 + aRandom.y * 2.0 + blastSizeBoost) * (30.0 / -mvPosition.z);
         gl_Position = projectionMatrix * mvPosition;
         
         float depthFade = smoothstep(60.0, 10.0, -mvPosition.z);
-        vAlpha = depthFade * (0.2 + aRandom.z * 0.6);
+
+        // DULL PARTICLE BRIGHTNESS IN PROJECTS & CONTACT SECTIONS (>= 2.5)
+        float dimFactor = 1.0 - smoothstep(2.2, 2.8, uScrollProgress) * 0.70;
+
+        vAlpha = depthFade * (0.25 + aRandom.z * 0.65) * dimFactor;
         vColor = pos;
       }
     `;
@@ -259,22 +309,95 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
       }
     `;
 
-    // Geometry & Attributes
+    // Geometry & Attributes Generation
     const geometry = new THREE.BufferGeometry();
     const indices = new Float32Array(particleCount);
     const randoms = new Float32Array(particleCount * 3);
+    const infoPositions = new Float32Array(particleCount * 3);
+    const codePositions = new Float32Array(particleCount * 3);
 
     for (let i = 0; i < particleCount; i++) {
       indices[i] = i;
       randoms[i * 3] = Math.random();
       randoms[i * 3 + 1] = Math.random();
       randoms[i * 3 + 2] = Math.random();
+
+      // 1. Compute Info-Icon Target Geometry (Speech Bubble + 'i' symbol)
+      let ix = 0, iy = 0, iz = (Math.random() - 0.5) * 1.5;
+      const typeInfo = Math.random();
+
+      if (typeInfo < 0.65) {
+        let angle = Math.random() * Math.PI * 2;
+        if (angle > 3.65 && angle < 4.25) {
+          angle = Math.random() < 0.5 ? 3.65 : 4.25;
+        }
+        const R = 11.5 + (Math.random() - 0.5) * 0.8;
+        ix = R * Math.cos(angle);
+        iy = R * Math.sin(angle);
+        if (Math.random() < 0.15) {
+          const t = Math.random();
+          ix = -8.0 - t * 4.5 + (Math.random() - 0.5) * 0.8;
+          iy = -8.0 - t * 4.5 + (Math.random() - 0.5) * 0.8;
+        }
+      } else if (typeInfo < 0.75) {
+        const t = Math.random();
+        ix = -7.5 - t * 5.2 + (Math.random() - 0.5) * 0.6;
+        iy = -7.5 - t * 3.5 + (Math.random() - 0.5) * 0.6;
+      } else if (typeInfo < 0.83) {
+        const rDot = Math.sqrt(Math.random()) * 1.3;
+        const aDot = Math.random() * Math.PI * 2;
+        ix = rDot * Math.cos(aDot);
+        iy = 5.2 + rDot * Math.sin(aDot);
+      } else {
+        const stemWidth = (Math.random() - 0.5) * 1.8;
+        const stemHeight = -4.5 + Math.random() * 6.5;
+        ix = stemWidth;
+        iy = stemHeight;
+      }
+
+      infoPositions[i * 3] = ix;
+      infoPositions[i * 3 + 1] = iy;
+      infoPositions[i * 3 + 2] = iz;
+
+      // 2. Compute Code Brackets </> Target Geometry for Skills Section
+      let cx = 0, cy = 0, cz = (Math.random() - 0.5) * 1.5;
+      const typeCode = Math.random();
+
+      if (typeCode < 0.35) {
+        const t = Math.random();
+        if (Math.random() < 0.5) {
+          cx = -7.5 + t * 5.5 + (Math.random() - 0.5) * 0.6;
+          cy = 0.0 + t * 6.5 + (Math.random() - 0.5) * 0.6;
+        } else {
+          cx = -7.5 + t * 5.5 + (Math.random() - 0.5) * 0.6;
+          cy = 0.0 - t * 6.5 + (Math.random() - 0.5) * 0.6;
+        }
+      } else if (typeCode < 0.65) {
+        const t = Math.random();
+        cx = -1.8 + t * 3.6 + (Math.random() - 0.5) * 0.6;
+        cy = -8.0 + t * 16.0 + (Math.random() - 0.5) * 0.6;
+      } else {
+        const t = Math.random();
+        if (Math.random() < 0.5) {
+          cx = 7.5 - t * 5.5 + (Math.random() - 0.5) * 0.6;
+          cy = 0.0 + t * 6.5 + (Math.random() - 0.5) * 0.6;
+        } else {
+          cx = 7.5 - t * 5.5 + (Math.random() - 0.5) * 0.6;
+          cy = 0.0 - t * 6.5 + (Math.random() - 0.5) * 0.6;
+        }
+      }
+
+      codePositions[i * 3] = cx;
+      codePositions[i * 3 + 1] = cy;
+      codePositions[i * 3 + 2] = cz;
     }
 
     geometry.setAttribute(
       'position',
       new THREE.BufferAttribute(new Float32Array(particleCount * 3).fill(0), 3)
     );
+    geometry.setAttribute('aInfoPos', new THREE.BufferAttribute(infoPositions, 3));
+    geometry.setAttribute('aCodePos', new THREE.BufferAttribute(codePositions, 3));
     geometry.setAttribute('aIndex', new THREE.BufferAttribute(indices, 1));
     geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 3));
 
@@ -283,6 +406,8 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
       uniforms: {
         uTime: { value: 0 },
         uIntro: { value: 0 },
+        uScrollProgress: { value: 0 },
+        uIsDesktop: { value: window.innerWidth >= 1024 ? 1.0 : 0.0 },
         uMouse: { value: new THREE.Vector3(0, 0, 0) },
         uColor1: { value: PALETTES[initialIdx].c1.clone() },
         uColor2: { value: PALETTES[initialIdx].c2.clone() },
@@ -315,14 +440,16 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
       renderer.setSize(window.innerWidth, window.innerHeight);
       composer.setSize(window.innerWidth, window.innerHeight);
       cameraZ = window.innerWidth < 768 ? 40 : 28;
+      material.uniforms.uIsDesktop.value = window.innerWidth >= 1024 ? 1.0 : 0.0;
     };
 
     window.addEventListener('resize', handleResize);
 
-    // Animation Loop
+    // Animation Loop with Exact Section Element Bounding Rect Calculations
     let animationFrameId;
     let time = 0;
     let introTimer = 0;
+    let currentScrollProgress = 0;
     const clock = new THREE.Clock();
 
     const animate = () => {
@@ -331,9 +458,55 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
       time += delta;
       introTimer += delta;
 
-      // 1-second intro progress (runs ONLY ONCE on page load, capping at 1.0)
+      // 1-second intro progress
       const uIntroVal = Math.min(introTimer / 1.0, 1.0);
       material.uniforms.uIntro.value = uIntroVal;
+
+      // Precise Section Progress Math
+      const vh = window.innerHeight;
+      const scrollY = window.scrollY;
+
+      const aboutEl = document.getElementById('about');
+      const skillsEl = document.getElementById('skills');
+      const projectsEl = document.getElementById('projects');
+
+      let targetScroll = 0.0;
+
+      if (aboutEl && skillsEl && projectsEl) {
+        const aboutTop = aboutEl.offsetTop;
+        const skillsTop = skillsEl.offsetTop;
+        const projectsTop = projectsEl.offsetTop;
+
+        // Trigger transition when section heading enters the upper middle of screen
+        const triggerPoint = scrollY + vh * 0.45;
+
+        if (triggerPoint < aboutTop) {
+          // Hero Section -> 0.0 (Vortex)
+          targetScroll = 0.0;
+        } else if (triggerPoint < skillsTop) {
+          // About Section -> 1.0 (Info Icon)
+          const dist = triggerPoint - aboutTop;
+          const range = skillsTop - aboutTop;
+          // Smooth transition during first 40% of scroll distance, then plateau at 1.0!
+          const transitionProgress = Math.min(dist / (range * 0.45), 1.0);
+          targetScroll = transitionProgress; // 0.0 -> 1.0
+        } else if (triggerPoint < projectsTop) {
+          // Skills Section -> 2.0 (Code Brackets </>)
+          const dist = triggerPoint - skillsTop;
+          const range = projectsTop - skillsTop;
+          // Smooth transition during first 40% of scroll distance, then plateau at 2.0!
+          const transitionProgress = Math.min(dist / (range * 0.45), 1.0);
+          targetScroll = 1.0 + transitionProgress; // 1.0 -> 2.0
+        } else {
+          // Projects & Contact Sections -> 3.0 (Vortex & Centered)
+          const dist = triggerPoint - projectsTop;
+          const transitionProgress = Math.min(dist / (vh * 0.45), 1.0);
+          targetScroll = 2.0 + transitionProgress; // 2.0 -> 3.0
+        }
+      }
+
+      currentScrollProgress += (targetScroll - currentScrollProgress) * 0.08;
+      material.uniforms.uScrollProgress.value = currentScrollProgress;
 
       material.uniforms.uTime.value = time;
       finalPass.uniforms.uTime.value = time;
@@ -342,7 +515,7 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
       mousePos.lerp(mouseTarget, 0.08);
       material.uniforms.uMouse.value.copy(mousePos);
 
-      // Color Palette Lerping (reads ref dynamically without re-mounting!)
+      // Color Palette Lerping
       const activeIdx = colorPaletteRef.current || 0;
       const targetC1 = PALETTES[activeIdx]?.c1 || PALETTES[0].c1;
       const targetC2 = PALETTES[activeIdx]?.c2 || PALETTES[0].c2;
@@ -374,5 +547,5 @@ export function CanvasContainer({ colorPalette, onCanvasReady }) {
     };
   }, []); // Mount ONCE!
 
-  return <div ref={containerRef} className="absolute inset-0 z-0" />;
+  return <div ref={containerRef} className="fixed inset-0 z-0 pointer-events-none" />;
 }

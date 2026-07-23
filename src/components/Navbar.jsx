@@ -84,7 +84,7 @@ export function Navbar() {
           className="font-mono text-sm font-semibold tracking-wider text-left transition-colors duration-300 group"
         >
           <span className="text-white group-hover:text-cyan-400 transition-colors">
-            chetan
+            Chetan
           </span>
           <span className="text-cyan-400 font-bold">.</span>
         </button>

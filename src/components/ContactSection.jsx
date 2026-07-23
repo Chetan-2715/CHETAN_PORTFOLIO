@@ -1,9 +1,10 @@
 import React from 'react';
 import { Linkedin, Github, Instagram, Phone, Mail } from 'lucide-react';
+import { PianoFooterText } from './PianoFooterText';
 
 export function ContactSection() {
   return (
-    <section id="contact" className="relative z-10 min-h-screen py-24 px-6 flex items-center justify-center">
+    <section id="contact" className="relative z-10 min-h-screen pt-24 pb-0 px-6 flex flex-col items-center justify-between">
       <div className="max-w-4xl mx-auto w-full text-center">
         {/* Section Title */}
         <div className="flex items-center gap-3 mb-8 justify-center">
@@ -13,7 +14,7 @@ export function ContactSection() {
           </h2>
         </div>
 
-        <div className="sci-panel p-8 sm:p-14 rounded-3xl backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="sci-panel p-8 sm:p-14 rounded-3xl backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden mb-12">
           <h3 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mb-4">
             Let’s Build Something Intelligent Together
           </h3>
@@ -74,12 +75,11 @@ export function ContactSection() {
               <Instagram className="w-5 h-5" />
             </a>
           </div>
-
-          <div className="mt-8 text-[11px] font-mono text-white/30 uppercase tracking-widest">
-            © {new Date().getFullYear()} Chetan Shabadi. All Rights Reserved.
-          </div>
         </div>
       </div>
+
+      {/* Footer Strip across lower half of CHETAN */}
+      <PianoFooterText />
     </section>
   );
 }

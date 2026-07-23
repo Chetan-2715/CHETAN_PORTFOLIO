@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Linkedin, Github, Instagram, Phone } from 'lucide-react';
+import { ControlPanel } from './ControlPanel';
 
 const FULL_SUBHEAD =
   'Specializing in Machine Learning, Deep Learning, and Computer Vision to engineer next-generation AI solutions.';
 
-export function HeroSection() {
+export function HeroSection({ colorPalette, onSetColorPalette }) {
   const [typedText, setTypedText] = useState('');
   const [isDone, setIsDone] = useState(false);
 
@@ -102,6 +103,12 @@ export function HeroSection() {
           </a>
         </div>
       </div>
+
+      {/* Color Palette Switcher (Scout inside Hero Section Only) */}
+      <ControlPanel
+        colorPalette={colorPalette}
+        onSetColorPalette={onSetColorPalette}
+      />
     </section>
   );
 }

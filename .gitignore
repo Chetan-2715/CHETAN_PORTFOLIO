@@ -17,6 +17,10 @@ dist/
 dist-ssr/
 *.local
 
+# Standalone Template Demos (Not pushed to GitHub)
+about.html
+index.single.html
+
 # Editor directories
 .vscode/*
 !.vscode/extensions.json

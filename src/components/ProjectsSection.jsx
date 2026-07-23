@@ -1,81 +1,52 @@
 import React from 'react';
-import { ExternalLink, Github, Sparkles } from 'lucide-react';
+import { FeatureSteps } from './ui/feature-section';
 
-const PROJECTS = [
+const PORTFOLIO_PROJECTS = [
   {
+    step: 'Project 01',
     title: 'Generative AI & Neural Vision Engine',
-    description: 'Real-time computer vision and generative deep learning pipeline for spatial video synthesis and object detection.',
-    tags: ['PyTorch', 'OpenCV', 'Generative AI', 'Python'],
-    github: 'https://github.com/Chetan-2715',
+    content:
+      'End-to-end multi-agent orchestration framework utilizing LLMs, vision transformers, and autonomous decision pipelines for enterprise workflow automation.',
+    image:
+      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop',
   },
   {
+    step: 'Project 02',
     title: 'Predictive Analytics & Data Science Pipeline',
-    description: 'High-throughput end-to-end data processing system deploying predictive machine learning algorithms on multidimensional data.',
-    tags: ['Scikit-Learn', 'Pandas', 'FastAPI', 'MLOps'],
-    github: 'https://github.com/Chetan-2715',
+    content:
+      'Scalable machine learning analytics engine performing feature extraction, real-time data streaming, and predictive modeling with high accuracy metrics.',
+    image:
+      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000&auto=format&fit=crop',
   },
   {
+    step: 'Project 03',
     title: 'Deep Learning Model Optimization Engine',
-    description: 'Custom neural network quantization and pruning framework optimizing model latency for edge deployment.',
-    tags: ['Deep Learning', 'TensorFlow', 'C++', 'Python'],
-    github: 'https://github.com/Chetan-2715',
+    content:
+      'High-performance neural network optimization tool reducing LLM inference latency and memory footprint using quantization, pruning, and custom CUDA kernels.',
+    image:
+      'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=2000&auto=format&fit=crop',
   },
 ];
 
 export function ProjectsSection() {
   return (
     <section id="projects" className="relative z-10 min-h-screen py-24 px-6 flex items-center justify-center">
-      <div className="max-w-5xl mx-auto w-full">
-        {/* Section Title */}
-        <div className="flex items-center gap-3 mb-8 justify-center sm:justify-start">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <h2 className="text-xs font-mono tracking-widest text-cyan-400 uppercase">
-            03 // Featured Projects
+      <div className="max-w-6xl mx-auto w-full">
+        {/* Section Heading */}
+        <div className="flex flex-col items-center sm:items-start mb-10">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-3">
+            Featured Projects
           </h2>
+          {/* Cyan to Purple Gradient Line */}
+          <div className="w-32 sm:w-40 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {PROJECTS.map((proj, idx) => (
-            <div
-              key={idx}
-              className="sci-panel p-6 sm:p-8 rounded-3xl backdrop-blur-xl border border-white/10 hover:border-cyan-500/30 transition-all duration-300 flex flex-col justify-between group shadow-xl"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <Sparkles className="w-5 h-5 text-cyan-400" />
-                  <a
-                    href={proj.github}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all"
-                    aria-label="View Project GitHub"
-                  >
-                    <Github className="w-4 h-4" />
-                  </a>
-                </div>
-
-                <h3 className="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors mb-3">
-                  {proj.title}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-white/60 leading-relaxed mb-6">
-                  {proj.description}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 pt-4 border-t border-white/5">
-                {proj.tags.map((tag, tIdx) => (
-                  <span
-                    key={tIdx}
-                    className="px-2.5 py-1 rounded-md bg-cyan-500/10 text-[10px] font-mono text-cyan-400 border border-cyan-500/20"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* FeatureSteps Interactive Component Showcase */}
+        <FeatureSteps
+          features={PORTFOLIO_PROJECTS}
+          title="Featured Projects"
+          autoPlayInterval={4500}
+        />
       </div>
     </section>
   );

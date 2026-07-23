@@ -6,7 +6,6 @@ import { AboutSection } from './components/AboutSection';
 import { SkillsSection } from './components/SkillsSection';
 import { ProjectsSection } from './components/ProjectsSection';
 import { ContactSection } from './components/ContactSection';
-import { ControlPanel } from './components/ControlPanel';
 
 export function App() {
   const [colorPalette, setColorPalette] = useState(0);
@@ -35,17 +34,14 @@ export function App() {
           uiLoaded ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <HeroSection />
+        <HeroSection
+          colorPalette={colorPalette}
+          onSetColorPalette={setColorPalette}
+        />
         <AboutSection />
         <SkillsSection />
         <ProjectsSection />
         <ContactSection />
-
-        {/* Floating Color Palette Switcher */}
-        <ControlPanel
-          colorPalette={colorPalette}
-          onSetColorPalette={setColorPalette}
-        />
       </main>
     </div>
   );
