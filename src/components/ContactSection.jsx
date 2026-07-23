@@ -6,14 +6,6 @@ export function ContactSection() {
   return (
     <section id="contact" className="relative z-10 min-h-screen pt-24 pb-0 px-6 flex flex-col items-center justify-between">
       <div className="max-w-4xl mx-auto w-full text-center">
-        {/* Section Title */}
-        <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <h2 className="text-xs font-mono tracking-widest text-cyan-400 uppercase">
-            04 // Contact & Connect
-          </h2>
-        </div>
-
         <div className="sci-panel p-8 sm:p-14 rounded-3xl backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden mb-12">
           <h3 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mb-4">
             Let’s Build Something Intelligent Together

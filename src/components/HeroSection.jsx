@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Linkedin, Github, Instagram, Phone } from 'lucide-react';
+import { Linkedin, Github, Instagram, Phone, FileText, ExternalLink } from 'lucide-react';
 import { ControlPanel } from './ControlPanel';
 
 const FULL_SUBHEAD =
@@ -102,9 +102,24 @@ export function HeroSection({ colorPalette, onSetColorPalette }) {
             <span className="text-xs sm:text-sm font-medium text-white/90 group-hover:text-white">+91 95117 57256</span>
           </a>
         </div>
+
+        {/* RESUME BUTTON (BELOW SOCIAL MEDIA ICONS) */}
+        <div className="mt-5 flex justify-center pointer-events-auto">
+          <a
+            href="/resume.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative px-7 py-3 rounded-full bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 border border-cyan-500/40 hover:border-cyan-400 text-white font-medium text-xs sm:text-sm flex items-center gap-2.5 transition-all duration-300 shadow-[0_0_20px_rgba(34,211,238,0.25)] hover:shadow-[0_0_30px_rgba(34,211,238,0.5)] hover:scale-105"
+          >
+            <FileText className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+            <span className="font-semibold tracking-wide">View Resume</span>
+            <ExternalLink className="w-3.5 h-3.5 text-white/60 group-hover:text-white transition-colors" />
+          </a>
+        </div>
+
       </div>
 
-      {/* Color Palette Switcher (Scout inside Hero Section Only) */}
+      {/* Color Palette Switcher */}
       <ControlPanel
         colorPalette={colorPalette}
         onSetColorPalette={onSetColorPalette}
