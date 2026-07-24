@@ -4,27 +4,39 @@ import { FeatureSteps } from './ui/feature-section';
 const PORTFOLIO_PROJECTS = [
   {
     step: 'Project 01',
-    title: 'Generative AI & Neural Vision Engine',
+    title: 'The Council of Fit (Agentic AI System)',
+    tech: ['Python', 'CrewAI', 'Gemini API'],
     content:
-      'End-to-end multi-agent orchestration framework utilizing LLMs, vision transformers, and autonomous decision pipelines for enterprise workflow automation.',
+      'Architected an autonomous, multi-agent coaching system using CrewAI to orchestrate complex prompt workflows. Integrated Google Gemini models to dynamically generate personalized workout routines and dietary recommendations based on specific user data.',
+    image:
+      'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?q=80&w=2000&auto=format&fit=crop',
+  },
+  {
+    step: 'Project 02',
+    title: 'AI Script Transliteration',
+    tech: ['Python', 'Gemini API', 'Prompt Engineering', 'NLP'],
+    content:
+      'Engineered an AI-powered NLP tool that accurately converts Kannada lyrics written phonetically in Marathi script directly into native Kannada text using advanced prompt engineering.',
+    image:
+      'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=2000&auto=format&fit=crop',
+  },
+  {
+    step: 'Project 03',
+    title: 'Sudoku Samurai – Interactive Sudoku Solver',
+    tech: ['React.js', 'FastAPI', 'Python', 'JavaScript'],
+    content:
+      'Engineered a high-performance solving engine using backtracking algorithms for dynamic grid sizes (up to 9x9), featuring a responsive React frontend with an interactive step-by-step Guided Mode.',
     image:
       'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop',
   },
   {
-    step: 'Project 02',
-    title: 'Predictive Analytics & Data Science Pipeline',
+    step: 'Project 04',
+    title: 'Medi-Scribe (AI Prescription Analyzer)',
+    tech: ['Python', 'OCR', 'AI Models'],
     content:
-      'Scalable machine learning analytics engine performing feature extraction, real-time data streaming, and predictive modeling with high accuracy metrics.',
+      'Built an AI-powered medical application utilizing computer vision and OCR models to automatically analyze, extract, and digitize handwritten medical prescriptions.',
     image:
-      'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000&auto=format&fit=crop',
-  },
-  {
-    step: 'Project 03',
-    title: 'Deep Learning Model Optimization Engine',
-    content:
-      'High-performance neural network optimization tool reducing LLM inference latency and memory footprint using quantization, pruning, and custom CUDA kernels.',
-    image:
-      'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=2000&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=2000&auto=format&fit=crop',
   },
 ];
 
@@ -42,11 +54,7 @@ export function ProjectsSection() {
         </div>
 
         {/* FeatureSteps Interactive Component Showcase */}
-        <FeatureSteps
-          features={PORTFOLIO_PROJECTS}
-          title="Featured Projects"
-          autoPlayInterval={4500}
-        />
+        <FeatureSteps features={PORTFOLIO_PROJECTS} />
       </div>
     </section>
   );
