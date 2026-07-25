@@ -1,37 +1,30 @@
 import React from 'react';
 import { Code, Cpu, Globe, Database } from 'lucide-react';
+import { GlowingEffect } from './ui/glowing-effect';
 
 const SKILLS = [
   {
     category: 'Languages & Core',
     icon: Code,
     color: 'text-purple-400',
-    borderColor: 'hover:border-purple-500/40',
-    glowColor: 'hover:shadow-[0_12px_35px_rgba(168,85,247,0.18)]',
     skills: ['Python', 'Java', 'SQL', 'DSA', 'OOP', 'TypeScript'],
   },
   {
     category: 'AI & Machine Learning',
     icon: Cpu,
     color: 'text-cyan-400',
-    borderColor: 'hover:border-cyan-500/40',
-    glowColor: 'hover:shadow-[0_12px_35px_rgba(34,211,238,0.18)]',
     skills: ['LLMs', 'NLP', 'Prompt Engineering', 'Agentic Workflows', 'PyTorch', 'TensorFlow', 'Computer Vision', 'LangChain', 'RAG'],
   },
   {
     category: 'Web Development',
     icon: Globe,
     color: 'text-pink-400',
-    borderColor: 'hover:border-pink-500/40',
-    glowColor: 'hover:shadow-[0_12px_35px_rgba(244,114,182,0.18)]',
     skills: ['React', 'Node.js', 'FastAPI', 'HTML/CSS', 'Tailwind CSS', 'REST APIs', 'Next.js'],
   },
   {
     category: 'Databases & Tools',
     icon: Database,
     color: 'text-emerald-400',
-    borderColor: 'hover:border-emerald-500/40',
-    glowColor: 'hover:shadow-[0_12px_35px_rgba(52,211,153,0.18)]',
     skills: ['MySQL', 'MongoDB', 'PostgreSQL', 'VS Code', 'Git', 'Vercel', 'Google Cloud'],
   },
 ];
@@ -56,37 +49,48 @@ export function SkillsSection() {
             <div className="w-32 sm:w-40 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 rounded-full shadow-[0_0_12px_rgba(34,211,238,0.6)]" />
           </div>
 
-          {/* Cards Stacked One Below Another (Vertical List Stack) */}
+          {/* Cards Stacked One Below Another with Glowing Effect */}
           <div className="flex flex-col gap-4 sm:gap-5">
             {SKILLS.map((cat, idx) => {
               const Icon = cat.icon;
               return (
                 <div
                   key={idx}
-                  className={`group relative sci-panel p-5 sm:p-7 rounded-2xl backdrop-blur-xl border border-white/10 ${cat.borderColor} ${cat.glowColor} transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:scale-[1.015] hover:bg-white/[0.08] cursor-pointer overflow-hidden shadow-xl`}
+                  className="group relative rounded-2xl p-0.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1.5 cursor-pointer"
                 >
-                  {/* Subtle Background Glow */}
-                  <div className="absolute -top-10 -right-10 w-28 h-28 bg-white/5 rounded-full blur-xl group-hover:bg-white/10 transition-all duration-500 pointer-events-none" />
+                  <GlowingEffect
+                    spread={40}
+                    glow={true}
+                    disabled={false}
+                    proximity={64}
+                    inactiveZone={0.01}
+                    borderWidth={2}
+                  />
 
-                  <div className="flex items-center gap-3 mb-3.5">
-                    <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-md">
-                      <Icon className={`w-5 h-5 ${cat.color}`} />
+                  <div className="relative sci-panel p-5 sm:p-7 rounded-[calc(1rem-1px)] backdrop-blur-xl border border-white/10 overflow-hidden bg-[#030305]/90">
+                    {/* Subtle Background Glow */}
+                    <div className="absolute -top-10 -right-10 w-28 h-28 bg-white/5 rounded-full blur-xl group-hover:bg-white/10 transition-all duration-500 pointer-events-none" />
+
+                    <div className="flex items-center gap-3 mb-3.5">
+                      <div className="p-2 rounded-xl bg-white/5 border border-white/10 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-md">
+                        <Icon className={`w-5 h-5 ${cat.color}`} />
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
+                        {cat.category}
+                      </h3>
                     </div>
-                    <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors">
-                      {cat.category}
-                    </h3>
-                  </div>
 
-                  {/* Skill Badges with Micro Flyover Animations */}
-                  <div className="flex flex-wrap gap-2">
-                    {cat.skills.map((skill, sIdx) => (
-                      <span
-                        key={sIdx}
-                        className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-white/80 hover:text-cyan-300 hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(34,211,238,0.25)] transition-all duration-300"
-                      >
-                        {skill}
-                      </span>
-                    ))}
+                    {/* Skill Badges with Micro Flyover Animations */}
+                    <div className="flex flex-wrap gap-2">
+                      {cat.skills.map((skill, sIdx) => (
+                        <span
+                          key={sIdx}
+                          className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-white/80 hover:text-cyan-300 hover:border-cyan-400/50 hover:bg-cyan-500/10 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(34,211,238,0.25)] transition-all duration-300"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
